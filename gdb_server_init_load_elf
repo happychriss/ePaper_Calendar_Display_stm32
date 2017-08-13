@@ -1,0 +1,4 @@
+target extended-remote localhost:4242
+load /home/development/Projects/eInkCalendar/stm32_display/build/stm32_display.hex
+quit
+

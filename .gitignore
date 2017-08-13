@@ -1,0 +1,13 @@
+*.o
+*.a
+*.bin
+*.map
+*.pyc
+*.pyo
+*.elf
+/cmake-build-debug/
+.idea/
+build/
+cmake-build-debug/
+
+/build/
