@@ -1,30 +1,50 @@
-E-ink wifi display
+E-ink wifi Calendar
 ==================
 
 This project contains the software bits for a e-ink display David has created, and I've modified
 
-You might find some info at his website: https://davidgf.net/page/41/e-ink-wifi-display
+That is the plan:
 
-Its a fork also from https://github.com/X-Ryl669/wifi_display who adjusted Davids great work using UART interface.
+Build a "Kitchen Calendar" by using a Waveshare eInk Display with STM32 processor. 
+http://www.waveshare.com/product/4.3inch-e-Paper.htm
 
-I have replaced make fils with cmake files, in current configuration (some path names are hard-coded) it runs with CLION
-and its integrated debugger (thanks to the new Clion Remote Debugging feature) on linux environment. I am using st-utils to connect to 
-the eInk display.
+It will be connected to a ESP8266 via UART (serial). The ESP8266 will use its Wifi to upload latest calendar entries from my Google-Calendar (e.g. twice a day). 
 
+Once loaded it will wake up the STM32 to update the eInk display.
+By this method power consumption is limited only for some seconds activity over the day - and we a always a good view on our daily activities.
 
-
-Contents
+Program the eInk Display - STM32 
 --------
 
-esp8266_firmware: firmware sources for the ESP, built using the xtensa toolchain and the IoT SDK (used v1.5)
+I will try to limit the processing on the ESP8266 as much as possible and to build most logic on the STM32. 
 
-media: Some pictures used by the screen
+This is possible based on the great work of this two people: 
+https://davidgf.net/page/41/e-ink-wifi-display
+https://github.com/X-Ryl669/wifi_display 
 
-server: PHP hell! Contains some cool JS editor David wrote that allows users to design screens, and where I added some widgets I needed
+They have extracted the original firmware and give the possibility to program the STM32 on the eInk display.
 
-stm32_application: STM32F firmware that actually drives the screen (was builtin in the board!)
+I have adjusted the cmake-file, the development is very easy by using CLION, including remote-debugging.
 
-stm32f10x: ST includes and libs used to build the stm32 firmware
+
+Code of the ESP8266
+--------
+https://github.com/happychriss/eInkCalendar_esp8266_sender
+The ESP should have the function to 
+* connect via wifi to Google-Account 
+* download the calendar information
+* wake up the STM32
+* push the calendar information to STM32
+
+Development is done also in CLION under Arduino using platformio.io for maintaining the dependencies. 
+
+
+Code of the STM32 (this repository)
+--------
+
+* media: Some pictures used by the screen (taken from davids project)
+* stm32_application: STM32F firmware that actually drives the screen (was builtin in the board!)
+* stm32f10x: ST includes and libs used to build the stm32 firmware
 
 How to build
 ------------
@@ -42,9 +62,9 @@ The server should be copied to a PHP enabled server, create a config.php and fil
 Schematics
 ----------
 
-Unlike David's method, I've tried to use SPI line and they proved too much unreliable to my taste (and it's hard to solder them if you don't have the right tools).
-Also, here's how I connected mine (much much easier):
-- Connected RX on the STM32 big white connector (DIN pin 3) on the left to the ESP8266's pin GPIO15 (I'm using the trick to swap the UART0TX output to MTDO)
+Using UART to connect:
+
+- Connected RX/TX on the STM32 big white and green connector to the ESP8266's pin GPIO13 and GPIO14  (I'm using the trick to swap the UART0TX output to MTDO)
 - Connected GND from the ESP8266 to the programming pin on the STM32 (see David's website for a description of this programming pins, basically it's the third)
 - Connected 3.3V from the ESP8266 to the programming pin on the STM32 (it's the first pin)
 - Connected RST on the STM32 big white connector (RST pin 1) on the left to the ESP8266's pin GPIO12.
@@ -55,25 +75,6 @@ I'll see if in the future I'll put back a power gating transistor to power on th
 You can plug a 3.3V UART to USB on the UART1 TX line on the ESP8266 if you want to see debug messages from the ESP (115200 bauds 8N1), or on the DOUT on the STM32 (460800 bauds 8N1)
 See below for changes...
 
-
-Changes
--------
-X-Ryl669:
-
-- I've changed the code for both CPU to use UART lines instead of SPI.
-- I've added support for header line parsing in the HTTP response so the server can decide how often the ESP8266 wakes up (or how long it'll sleep).
-- I've added support for storing the server's and WIFI information in the ESP's flash (so it survives power drop). If you need to reset this parameters, boot with a wire between GPIO4 and GND on the ESP8266.
-- I've changed the code so the ESP8266 actually sleeps (David's code had a bug with it and it failed entering sleep and restarted due to watchdog instead every 30s or so). Sleep time is 10mn by default.
-- The server's weather widgets have been updated to support multi-languages.
-- I've added a traffic information widget (you need to register for BingMap api to use it, it's free) and made the required code to transform a 24bits per pixel to 4bits per pixel picture.
-- Soon, there'll also be a Caldav's next event remainder widget...
-- I've made a case for it if you have access to a 3D printer: https://cad.onshape.com/documents/366875cd2b4c0add4211b015/w/173325f8378b7a2f71e5b032/e/1de13be82e26fd3fe2a156ce
-
-You can hang it on the wall, with the 2 part of the assembly if you need it.![Some pictures](http://imgur.com/MejbGxD.png)
-
-happychriss:
-- moved from make to cmake to be working with CLion IDE 
-  
 
 GDE043A2
 --------

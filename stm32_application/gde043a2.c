@@ -12,6 +12,7 @@
 
 #include <stm32f10x/stm32f10x.h>
 #include "imgdec.h"
+#include "sram.h"
 
 #define EINK_STV_L  GPIO_ResetBits(GPIOF, GPIO_Pin_6);
 #define EINK_STV_H  GPIO_SetBits  (GPIOF, GPIO_Pin_6);
@@ -323,3 +324,45 @@ void einkd_deinit() {
 }
 
 
+void einkd_refresh_from_sram() {
+	unsigned char linebuffer[200];
+	unsigned char b;
+
+	// Send this 8 times (using table 1)
+	for (int i = 0; i < FRAME_CLEAR_LEN; i++) {
+		einkd_scan_start();
+		for (int row = 0; row < 600; row++) {  //r5
+			for (int col = 0; col < 200; col++) {  //r6
+				linebuffer[col] = CLEAR_WHITE;
+			}
+			einkd_sendrow(linebuffer);
+		}
+		einkd_sendrow(linebuffer);
+	}
+
+	// Repeat 4 more times using table 2 :)
+	for (int i = 0; i < 4; i++) {
+		einkd_scan_start();
+
+		for (uint32_t row = 0; row < 600; row++) {  //r5
+
+			for (uint32_t col = 0; col < 200; col++) {  //r6
+				uint32_t offset = col + 200*row;
+				uint16_t sram_buffer;
+
+				FSMC_SRAM_ReadBuffer(&sram_buffer,offset>> 1,1 );
+
+				if (offset & (1 << 0)) {
+					b=(unsigned char) sram_buffer&0xFF;
+				} else {
+					b=(unsigned char) (sram_buffer>>8) & 0xff;
+				}
+
+
+				linebuffer[col] = wave_table_end[b][i];
+			}
+			einkd_sendrow(linebuffer);
+		}
+		einkd_sendrow(linebuffer);
+	}
+}

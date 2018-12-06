@@ -13,6 +13,7 @@ void einkd_PowerOff();
 // Repaint the screen. Pass color buffers (should be 120000 bytes each)
 void einkd_refresh(const unsigned char * buffer);
 void einkd_refresh_compressed(const unsigned char * buffer);
+void einkd_refresh_from_sram();
 void einkd_clear(int color);
 
 

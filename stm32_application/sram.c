@@ -5,6 +5,8 @@
 // SRAM initialization for the waveshare e-ink board.
 // It ships an IS62WV51216BLL (1MB RAM, 512K * 16)
 
+#define Bank1_SRAM3_ADDR ((uint32_t)0x68000000)
+
 void FSMC_SRAM_Init() {
 	// Enable FSMC clock
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_FSMC, ENABLE);
@@ -65,3 +67,56 @@ void FSMC_SRAM_Init() {
 }
 
 
+/**
+  * @brief  Writes a Half-word buffer to the FSMC SRAM memory.
+  * @param  pBuffer : pointer to buffer.
+  * @param  WriteAddr : SRAM memory internal address from which the data
+  *        will be written.
+  * @param  NumHalfwordToWrite : number of half-words to write.
+  * @retval None
+  */
+void FSMC_SRAM_WriteBuffer(uint16_t* pBuffer, uint32_t WriteAddr, uint32_t NumHalfwordToWrite)
+{
+    for(; NumHalfwordToWrite != 0; NumHalfwordToWrite--) /* while there is data to write */
+    {
+        /* Transfer data to the memory */
+        *(uint16_t *) (Bank1_SRAM3_ADDR + WriteAddr) = *pBuffer++;
+
+        /* Increment the address*/
+        WriteAddr += 2;
+    }
+}
+
+void FSMC_SRAM_FillBuffer(uint16_t value, uint32_t WriteAddr, uint32_t NumHalfwordToWrite)
+{
+    for(; NumHalfwordToWrite != 0; NumHalfwordToWrite--) /* while there is data to write */
+    {
+        /* Transfer data to the memory */
+        *(uint16_t *) (Bank1_SRAM3_ADDR + WriteAddr) = value;
+
+        /* Increment the address*/
+        WriteAddr += 2;
+    }
+}
+
+
+
+/**
+  * @brief  Reads a block of data from the FSMC SRAM memory.
+  * @param  pBuffer : pointer to the buffer that receives the data read
+  *        from the SRAM memory.
+  * @param  ReadAddr : SRAM memory internal address to read from.
+  * @param  NumHalfwordToRead : number of half-words to read.
+  * @retval None
+  */
+void FSMC_SRAM_ReadBuffer(uint16_t* pBuffer, uint32_t ReadAddr, uint32_t NumHalfwordToRead)
+{
+    for(; NumHalfwordToRead != 0; NumHalfwordToRead--) /* while there is data to read */
+    {
+        /* Read a half-word from the memory */
+        *pBuffer++ = *(__IO uint16_t*) (Bank1_SRAM3_ADDR + ReadAddr);
+
+        /* Increment the address*/
+        ReadAddr += 2;
+    }
+}

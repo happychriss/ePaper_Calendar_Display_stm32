@@ -15,7 +15,7 @@ include_directories(stm32f10x/include/stm32f10x)
 file(GLOB_RECURSE USER_SOURCES  stm32_application/*.c)
 file(GLOB_RECURSE USER_HEADERS  stm32_application/*.h stm32_application/images/*.h)
 
-add_executable(${PROJECT_NAME}.elf ${STM_HEADERS} ${USER_SOURCES} ${USER_HEADERS} ${LINKER_SCRIPT})
+add_executable(${PROJECT_NAME}.elf ${STM_HEADERS} ${USER_SOURCES} ${USER_HEADERS} ${LINKER_SCRIPT} stm32_application/usart.c stm32_application/usart.h stm32_application/init_stm32.c stm32_application/init_stm32.h stm32_application/support_functions.c stm32_application/support_functions.h stm32_application/painter.c stm32_application/painter.h stm32_application/fonts/fontem.h)
 
 target_link_libraries(${PROJECT_NAME}.elf stm32f10x)
 
