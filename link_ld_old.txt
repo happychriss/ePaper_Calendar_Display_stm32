@@ -20,8 +20,12 @@ __ram_end__     = __ram_start__ + __ram_size__;
 __stack_end__   = __ram_end__;      /* Top of RAM */
 __stack_size__  = 16K;
 __stack_start__ = __stack_end__ - __stack_size__;
-__heap_start__  = ORIGIN(XRAM);
-__heap_end__    = ORIGIN(XRAM) + LENGTH(XRAM);
+
+
+__heap_start__  = _ebss ;      /* Between bss and stack */
+__heap_end__    = __stack_start__;
+
+
 end             = __heap_start__;
 
 SECTIONS
@@ -73,4 +77,5 @@ SECTIONS
 		*(.extdata*)
 	} > XRAM
 }
+
 

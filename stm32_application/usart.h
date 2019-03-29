@@ -5,7 +5,7 @@
 #ifndef STM32_DISPLAY_USART_C_H
 #define STM32_DISPLAY_USART_C_H
 
-void USART_Initialize();
+void Serial_USART_Initialize();
 void USART_StartDMA();
 void USART_Write(const char * txt);
 void USART_WriteInt(int v);

@@ -2,10 +2,24 @@
 #include <stm32f10x/stm32f10x.h>
 #include <stm32f10x/stm32f10x_fsmc.h>
 
+
+#include "uart.h"
+#include "usart.h"
+
 // SRAM initialization for the waveshare e-ink board.
 // It ships an IS62WV51216BLL (1MB RAM, 512K * 16)
+// STM32 runs with 72MhZ
 
-#define Bank1_SRAM3_ADDR ((uint32_t)0x68000000)
+
+// #define Bank1_SRAM3_ADDR ((uint32_t)0x68000000)
+//
+
+// Put the Memory for the screen buffer at the end of SRAM:
+// SRAM: 512*1204*16
+// SRAM: 512*1204*16 - 60.0000 for the screen
+//#define Bank1_SRAM3_ADDR ((uint32_t)0x68000000)
+#define Bank1_SRAM3_ADDR ((uint32_t)0x687F1590)
+
 
 void FSMC_SRAM_Init() {
 	// Enable FSMC clock
@@ -77,6 +91,8 @@ void FSMC_SRAM_Init() {
   */
 void FSMC_SRAM_WriteBuffer(uint16_t* pBuffer, uint32_t WriteAddr, uint32_t NumHalfwordToWrite)
 {
+
+
     for(; NumHalfwordToWrite != 0; NumHalfwordToWrite--) /* while there is data to write */
     {
         /* Transfer data to the memory */
@@ -86,6 +102,9 @@ void FSMC_SRAM_WriteBuffer(uint16_t* pBuffer, uint32_t WriteAddr, uint32_t NumHa
         WriteAddr += 2;
     }
 }
+// Word in the ARM context is 32-bit
+// SRAM: 512K words by 16 bits
+// NumHalfwordToWrite = number of 16bit words to write
 
 void FSMC_SRAM_FillBuffer(uint16_t value, uint32_t WriteAddr, uint32_t NumHalfwordToWrite)
 {

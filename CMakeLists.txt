@@ -2,7 +2,6 @@ project(stm32_display C ASM)
 cmake_minimum_required(VERSION 3.5.0)
 add_definitions(-DSTM32F10X_XL)
 
-
 add_subdirectory(stm32f10x)
 
 include_directories(stm32_application)
@@ -10,12 +9,13 @@ include_directories(stm32f10x/include)
 include_directories(stm32_application/images)
 include_directories(stm32f10x/include)
 include_directories(stm32f10x/include/stm32f10x)
+include_directories(FatFS)
 
 
-file(GLOB_RECURSE USER_SOURCES  stm32_application/*.c)
-file(GLOB_RECURSE USER_HEADERS  stm32_application/*.h stm32_application/images/*.h)
+file(GLOB_RECURSE USER_SOURCES  stm32_application/*.c FatFS/*.c)
+file(GLOB_RECURSE USER_HEADERS  stm32_application/*.h stm32_application/images/*.h FatFS/*.h)
 
-add_executable(${PROJECT_NAME}.elf ${STM_HEADERS} ${USER_SOURCES} ${USER_HEADERS} ${LINKER_SCRIPT} stm32_application/usart.c stm32_application/usart.h stm32_application/init_stm32.c stm32_application/init_stm32.h stm32_application/support_functions.c stm32_application/support_functions.h stm32_application/painter.c stm32_application/painter.h stm32_application/fonts/fontem.h)
+add_executable(${PROJECT_NAME}.elf ${STM_HEADERS} ${USER_SOURCES} ${USER_HEADERS} ${LINKER_SCRIPT}  stm32_application/usart.c stm32_application/usart.h stm32_application/init_stm32.c stm32_application/init_stm32.h stm32_application/support_functions.c stm32_application/support_functions.h stm32_application/painter.c stm32_application/painter.h stm32_application/fontem.h stm32_application/usart_dma.c stm32_application/usart_dma.h stm32_application/sdcard.h stm32_application/sdcard.c stm32f10x/stm32f10x_sdio.c stm32f10x/include/stm32f10x/stm32f10x_sdio.h stm32_application/json_parser.c stm32_application/json_parser.h)
 
 target_link_libraries(${PROJECT_NAME}.elf stm32f10x)
 

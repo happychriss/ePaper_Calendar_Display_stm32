@@ -4,6 +4,19 @@
 
 #ifndef STM32_DISPLAY_SUPPORT_FUNCTIONS_H
 #define STM32_DISPLAY_SUPPORT_FUNCTIONS_H
+
+// #define MYDEBUG
+
+#ifdef MYDEBUG
+#define DP(x)     USART_Write(x);
+#define DPD(x)     USART_WriteInt(x);USART_WRITE("\n\r");
+#define DPL(x)  USART_Write(x);USART_WRITE("\n\r");
+#else
+#define DP(x)
+#define DPD(x)
+#define DPL(x)
+#endif
+
 void delay_us(uint32_t time_us);
 void delay_ms(uint16_t time_ms);
 void sync_blink();

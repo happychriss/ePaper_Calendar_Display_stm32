@@ -13,6 +13,9 @@
 #include <stm32f10x/stm32f10x.h>
 #include "imgdec.h"
 #include "sram.h"
+#include "uart.h"
+#include "usart.h"
+#include "support_functions.h"
 
 #define EINK_STV_L  GPIO_ResetBits(GPIOF, GPIO_Pin_6);
 #define EINK_STV_H  GPIO_SetBits  (GPIOF, GPIO_Pin_6);
@@ -194,6 +197,7 @@ void einkd_refresh(const unsigned char * buffer) {
 	for (int i = 0; i < 4; i++) {
 		einkd_scan_start();
 		for (int row = 0; row < 600; row++) {  //r5
+
 			for (int col = 0; col < 200; col++) {  //r6
 				int offset = col + 200*row;
 				unsigned char b = buffer[offset];
@@ -325,8 +329,8 @@ void einkd_deinit() {
 
 
 void einkd_refresh_from_sram() {
-	unsigned char linebuffer[200];
-	unsigned char b;
+	uint8_t linebuffer[200];
+
 
 	// Send this 8 times (using table 1)
 	for (int i = 0; i < FRAME_CLEAR_LEN; i++) {
@@ -340,29 +344,50 @@ void einkd_refresh_from_sram() {
 		einkd_sendrow(linebuffer);
 	}
 
-	// Repeat 4 more times using table 2 :)
+	// Repeat 4 more times using taasdfble 2 :)
 	for (int i = 0; i < 4; i++) {
 		einkd_scan_start();
 
 		for (uint32_t row = 0; row < 600; row++) {  //r5
 
-			for (uint32_t col = 0; col < 200; col++) {  //r6
-				uint32_t offset = col + 200*row;
-				uint16_t sram_buffer;
+			uint16_t BufferLineBytes[100];
 
-				FSMC_SRAM_ReadBuffer(&sram_buffer,offset>> 1,1 );
-
-				if (offset & (1 << 0)) {
-					b=(unsigned char) sram_buffer&0xFF;
-				} else {
-					b=(unsigned char) (sram_buffer>>8) & 0xff;
-				}
-
-
-				linebuffer[col] = wave_table_end[b][i];
+			FSMC_SRAM_ReadBuffer(BufferLineBytes,row*200,100);
+			
+			if (row==20) {
+				DP("Row 20\n\r");
 			}
+			
+			for (uint8_t col = 0; col < 100; col++) {  //r6
+
+				uint32_t offset = col*2 + 100*row;
+
+				typedef union {
+					uint16_t    sram_buffer;
+					char  b1b2[2];
+				} COMBO;
+
+				COMBO   var1;
+
+				var1.sram_buffer=BufferLineBytes[col];
+				
+				// reading 16bit  = 2 bytes
+//                FSMC_SRAM_ReadBuffer(&var1.sram_buffer,offset,1 );
+
+				linebuffer[col*2] = wave_table_end[var1.b1b2[0]][i];
+				linebuffer[(col*2)+1] = wave_table_end[var1.b1b2[1]][i];
+
+			}
+
 			einkd_sendrow(linebuffer);
+
+
 		}
+
+
+
 		einkd_sendrow(linebuffer);
 	}
 }
+
+
