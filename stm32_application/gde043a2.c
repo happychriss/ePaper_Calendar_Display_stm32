@@ -16,6 +16,7 @@
 #include "uart.h"
 #include "usart.h"
 #include "support_functions.h"
+#include "global.h"
 
 #define EINK_STV_L  GPIO_ResetBits(GPIOF, GPIO_Pin_6);
 #define EINK_STV_H  GPIO_SetBits  (GPIOF, GPIO_Pin_6);
@@ -328,7 +329,7 @@ void einkd_deinit() {
 }
 
 
-void einkd_refresh_from_sram() {
+void einkd_paint_grafic_buffer(t_grafic_buffer_line *grafic_buffer_lines) {
 	uint8_t linebuffer[200];
 
 
@@ -350,10 +351,10 @@ void einkd_refresh_from_sram() {
 
 		for (uint32_t row = 0; row < 600; row++) {  //r5
 
-			uint16_t BufferLineBytes[100];
+			uint16_t *BufferLineBytes=(uint16_t *) grafic_buffer_lines[row].line;
+//			FSMC_SRAM_ReadBuffer(BufferLineBytes,row*200,100);
 
-			FSMC_SRAM_ReadBuffer(BufferLineBytes,row*200,100);
-			
+
 			if (row==20) {
 				DP("Row 20\n\r");
 			}

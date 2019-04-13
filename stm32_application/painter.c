@@ -9,6 +9,8 @@
 #include "painter.h"
 #include "uart.h"
 #include "usart.h"
+#include "string.h"
+#include "global.h"
 
 #define BLACK 0b00
 #define DARK_GREY 0b01
@@ -31,18 +33,17 @@ const uint8_t x_bit_mask[4] = {
 
 
 
-
-
-
 //800 Zeichen pro Zeile,
 
-void InitDisplayMemory() {
+void ClearDisplay() {
     uint16_t black=0b0000000000000000; //16bit = 8 Zeichen
     uint16_t white=0b1111111111111111;
     uint32_t address1=0;
     uint32_t address2=20000;
 
-    FSMC_SRAM_FillBuffer(white,address1,60000); // 600*800=480.000 / 8 = 60.000
+memset(ptr_grafic_buffer,white,600*200);
+
+//    FSMC_SRAM_FillBuffer(white,address1,60000); // 600*800=480.000 / 8 = 60.000
 //    FSMC_SRAM_FillBuffer(black,address2,1000); // 600*800=480.000 / 8 = 60.000
 }
 
@@ -88,13 +89,14 @@ int font_draw_glyph_L(const struct font *font,
     unsigned int rows = glyph->rows, cols = glyph->cols;
     const unsigned char *data = glyph->bitmap;
     unsigned char count = 0, class = 0;
-    uint8_t BufferLineBytes[200];  //800 pixel = 100 bytes * 2 for grey colors = 200
+//    uint8_t BufferLineBytes[200];  //800 pixel = 100 bytes * 2 for grey colors = 200
 
     for (unsigned int row = 0; row < rows; row++) {
         uint32_t yofs = row + y + (font->ascender - glyph->top);
         DPD(yofs);DP("\n\r");
 
-        FSMC_SRAM_ReadBuffer((uint16_t *)BufferLineBytes, yofs*200,100); //16bit = 8 pixel = 100 unit16
+  //      FSMC_SRAM_ReadBuffer((uint16_t *)BufferLineBytes, yofs*200,100); //16bit = 8 pixel = 100 unit16
+        uint8_t *BufferLineBytes=(uint8_t *) grafic_buffer_lines[yofs].line;
 
         for (unsigned int col = 0; col < cols; col++) {
             int xofs = col + x + glyph->left;
@@ -151,7 +153,7 @@ int font_draw_glyph_L(const struct font *font,
 
 
 
-        FSMC_SRAM_WriteBuffer((uint16_t *)BufferLineBytes, yofs*200,100); //16bit = 8 pixel = 100 unit16
+//       FSMC_SRAM_WriteBuffer((uint16_t *)BufferLineBytes, yofs*200,100); //16bit = 8 pixel = 100 unit16
 
 
 

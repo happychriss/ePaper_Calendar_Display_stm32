@@ -33,7 +33,7 @@
 /   3: f_lseek() function is removed in addition to 2. */
 
 
-#define	_USE_STRFUNC	0
+#define	_USE_STRFUNC	2 //needed by ini.c
 /* This option switches string functions, f_gets(), f_putc(), f_puts() and
 /  f_printf().
 /

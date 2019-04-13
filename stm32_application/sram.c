@@ -17,8 +17,8 @@
 // Put the Memory for the screen buffer at the end of SRAM:
 // SRAM: 512*1204*16
 // SRAM: 512*1204*16 - 60.0000 for the screen
-//#define Bank1_SRAM3_ADDR ((uint32_t)0x68000000)
-#define Bank1_SRAM3_ADDR ((uint32_t)0x687F1590)
+#define Bank1_SRAM3_ADDR ((uint32_t)0x68000000)
+//#define Bank1_SRAM3_ADDR ((uint32_t)0x687F1590)
 
 
 void FSMC_SRAM_Init() {
