@@ -22,8 +22,7 @@
 // #define LIGHT_GREY 0b10
 
 
-#define CANVAS_X 800
-#define CANVAS_Y 600
+
 
 const uint8_t x_bit_mask[4] = {
         0b00111111,

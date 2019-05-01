@@ -8,6 +8,9 @@
 #include <fontem.h>
 #include "global.h"
 
+#define CANVAS_X 800
+#define CANVAS_Y 600
+
 extern t_grafic_buffer_line* grafic_buffer_lines;
 extern uint8_t *ptr_grafic_buffer;
 

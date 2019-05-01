@@ -83,7 +83,7 @@ bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_en
                 cal_entries[*cal_cnt].c0_today=strdup("Morgen");
             } else {
 
-                cal_entries[*cal_cnt].c1_weekday=strdup(WEEKDAY[cal_entries[*cal_cnt].tm->tm_wday-1]);
+                cal_entries[*cal_cnt].c1_weekday=strdup(WEEKDAY[cal_entries[*cal_cnt].tm->tm_wday]);
 
                 //Day: 1.
                 cal_entries[*cal_cnt].c2_day=calloc(sizeof(char),4);
@@ -105,7 +105,14 @@ bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_en
 
             if (search_json(js, tokens, r, searchstr, value) != 0) {
 
-                utf8_to_latin9(value2, value,strlen(value)+1);
+                size_t length;
+
+                if (strlen(value)>35) {
+                    length=35;
+                } else {length=strlen(value);}
+
+                utf8_to_latin9(value2, value,length+1);
+
                 size_t needed = snprintf(NULL, 0, summary_format, value2);
                 cal_entries[*cal_cnt].c4_summary= malloc(needed+1);
                 sprintf(cal_entries[*cal_cnt].c4_summary, summary_format, value2);

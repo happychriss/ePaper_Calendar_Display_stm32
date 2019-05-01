@@ -24,13 +24,14 @@
 #include "support_functions.h"
 #include "init_stm32.h"
 
-//#include "fonts/font-robo_8-8.h"
+#include "fonts/font-robo_8-8.h"
 //#include "fonts/font-robo_bold_8-8.h"
 #include "fonts/font-robo_12-12.h"
 //#include "fonts/font-robo_bold_12-12.h"
 #include "fonts/font-robo_20-20.h"
-#include "fonts/font-DejaVuSerif-16-rle.h"
+//#include "fonts/font-DejaVuSerif-16-rle.h"
 #include "fonts/font-robo_40-40.h"
+//#include "fonts/font-robo_10_rle-10.h"
 
 #include "painter.h"
 #include "usart_dma.h"
@@ -47,6 +48,7 @@
 #define GLOBAL_WAIT_FOR_ESP_COMMANDS 2
 #define GLOBAL_ERROR 3
 #define GLOBAL_SHUTDOWN 4
+#define GLOBAL_SEND_WIFI_INFO_FOR_ESP 5
 
 #define CALENDAR_READY  1
 #define CALANDAR_MORE  2
@@ -56,31 +58,32 @@
 // Commands from the ESP
 #define ESP_CMD_READ_CALENDAR 1
 #define ESP_CMD_SHUTDOWN 2
+#define ESP_CMD_SHOW_USERCODE 3
+#define ESP_CMD_SHOW_ERRORMSG 4
 
 #define CAL_LINE_FONT 1
 #define CAL_LINE_FSIZE 20
 #define CAL_LINE_HEIGHT 40
-#define CAL_HEADER_OFFSET 70
+#define CAL_HEADER_OFFSET 85
 
 #define CAL_DISPLAY_ENTRIES 12
 #define CAL_DISPLAY_DAYS 14
 
 //************** Global VAriables
-const struct font *font_table[4] =
+const struct font *font_table[3] =
         {
                 &font_robo_12_12,
                 &font_robo_20_20,
                 &font_robo_40_40,
-                &font_DejaVuSerif_16_rle
         };
 
-const char *const WEEKDAY[] = {"Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa.", "So."};
+const char *const WEEKDAY[] = {"So.","Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa."};
 const char *const MONTH[] = {"Jan.", "Feb.", "März", "Apr.", "Mai", "Jun.", "Jul.", "Aug.", "Sept.", "Okt.", "Nov.",
                              "Dez."};
 
 FATFS FatFs;   /* Work area (file system object) for logical drive */
 uint8_t global_status;
-char  global_error[100];
+char global_error[100];
 t_grafic_buffer_line *grafic_buffer_lines;
 uint8_t *ptr_grafic_buffer;
 struct tm global_time;
@@ -126,12 +129,12 @@ int main() {
 
     // Mount SD Card and Read configuration
     if (f_mount(&FatFs, "", 1)) {
-        strcpy(global_error,"SD Card Mount Error\0");
+        strcpy(global_error, "SD Card Mount Error\0");
         global_status = GLOBAL_ERROR;
     }
 
     if (ini_parse("cal.ini", handler, &config) < 0) {
-        strcpy(global_error,"Ini File Read Error\0");
+        strcpy(global_error, "Ini File Read Error\0");
         global_status = GLOBAL_ERROR;
     }
 
@@ -145,27 +148,34 @@ int main() {
     PaintText(font_table[1], 1, 60, tmp_text);
 
     UpdateDisplay();
+    delay_ms(1000);
 
-    global_status = GLOBAL_WAIT_FOR_ESP_COMMANDS;
+    global_status = GLOBAL_SEND_WIFI_INFO_FOR_ESP;
 
 
     // ******************************** LOOP  *****************************************************************
 
-    while (1) {
+    while (global_status != GLOBAL_SHUTDOWN) {
 
         switch (global_status) {
 
-            case GLOBAL_WAIT_FOR_ESP_COMMANDS:
 
-                // Return Status to ESP ************************************************
-                ;
+            case GLOBAL_SEND_WIFI_INFO_FOR_ESP:
 
                 USART_WriteStatus(CALENDAR_READY);
 
                 // Update with Wifi Information
                 USART_Write(config.wifi_ssid);
-                delay_ms(500);
+                delay_ms(300);
                 USART_Write(config.wifi_pwd);
+
+                global_status = GLOBAL_WAIT_FOR_ESP_COMMANDS;
+                break;
+
+            case GLOBAL_WAIT_FOR_ESP_COMMANDS:
+
+                // Return Status to ESP ************************************************
+                ;
 
                 // Wait for Instruction from ESP
                 uint8_t cmd = 0; //USART_ReadByteSync(USART1, 0);
@@ -181,30 +191,67 @@ int main() {
                 // Then read command
                 cmd = USART_ReadByteSync(USART1, 0);
 
-                char str_esp_time[22]={0};
+                char str_esp_time[22] = {0};
+                char device_code[10] = {0};
+                char eror_msg[100]={0};
 
                 switch (cmd) {
+
+                    case ESP_CMD_SHOW_USERCODE:
+                        USART_ReadString(device_code);
+
+                        //** Init eInk Display and update with start information*
+                        ClearDisplay();
+
+                        PaintText(font_table[2], 1, 1, "** Google Registration **\0");
+                        sprintf(tmp_text, "Code: %s", device_code);
+                        PaintText(font_table[2], 1, 100, tmp_text);
+                        PaintText(font_table[1], 1, 250, "Register your device with Google OAuht.\0");
+                        PaintText(font_table[1], 1, 290, "Check: https://www.google.com/device\0");
+
+                        UpdateDisplay();
+                        delay_ms(1000);
+
+                        USART_WriteStatus(CALENDAR_READY);
+                        global_status = GLOBAL_WAIT_FOR_ESP_COMMANDS;
+
+                        break;
+
+                    case ESP_CMD_SHOW_ERRORMSG:
+                        USART_ReadString(eror_msg);
+
+                        //** Init eInk Display and update with start information*
+                        ClearDisplay();
+
+                        PaintText(font_table[2], 1, 1, "** ERROR **\0");
+                        PaintText(font_table[1], 1, 100, eror_msg);
+
+                        UpdateDisplay();
+                        delay_ms(1000);
+
+                        USART_WriteStatus(CALENDAR_READY);
+                        global_status = GLOBAL_WAIT_FOR_ESP_COMMANDS;
 
                     case ESP_CMD_READ_CALENDAR:
 
                         // read the current time from ESP
                         USART_ReadString(str_esp_time);
-                        strptime(str_esp_time,"%Y %m %d %H:%M:%S",&global_time);
+                        strptime(str_esp_time, "%Y %m %d %H:%M:%S", &global_time);
 
                         // Prepare time-min and time-max for calendar
                         struct tm my_time;
-                        memcpy(&my_time,&global_time, sizeof(struct tm));
+                        memcpy(&my_time, &global_time, sizeof(struct tm));
                         char time_min[11];
                         char time_max[11];
-                        strftime(time_min,sizeof(time_min),"%Y-%m-%d",&my_time);
-                        my_time.tm_mday=my_time.tm_mday+CAL_DISPLAY_DAYS;
+                        strftime(time_min, sizeof(time_min), "%Y-%m-%d", &my_time);
+                        my_time.tm_mday = my_time.tm_mday + CAL_DISPLAY_DAYS;
                         mktime(&my_time);
-                        strftime(time_max,sizeof(time_min),"%Y-%m-%d",&my_time);
+                        strftime(time_max, sizeof(time_min), "%Y-%m-%d", &my_time);
 
                         int cal_entries_cnt = 0;
 
                         // ask ESP to read calendars from Google and build calendar
-                        for (int cal=0;cal<config.cal_number;cal++){
+                        for (int cal = 0; cal < config.cal_number; cal++) {
 
                             //Ask ESP to return calendar information
                             BuildCalenarRequest(calendar_request, config.calendars[cal].link, time_min, time_max);
@@ -213,45 +260,58 @@ int main() {
                             USART_Write(calendar_request);
 
                             uint32_t buffer_counter;
-                            buffer_counter=USART_ReadString(json_buffer);
-                            BuildCalendar(json_buffer, buffer_counter, cal_entries, &cal_entries_cnt, &global_time, (char *) config.calendars[cal].text);
-                            
-                            
+                            buffer_counter = USART_ReadString(json_buffer);
+                            BuildCalendar(json_buffer, buffer_counter, cal_entries, &cal_entries_cnt, &global_time,
+                                          (char *) config.calendars[cal].text);
+
+
                             // Tell ESP we want to send more requests
-                            if (cal<(config.cal_number-1) && (cal_entries_cnt<=CAL_DISPLAY_ENTRIES)) {
+                            if (cal < (config.cal_number - 1) && (cal_entries_cnt <= CAL_DISPLAY_ENTRIES)) {
                                 USART_WriteStatus(CALANDAR_MORE);
-                            } else {
-                                USART_WriteStatus(CALENDAR_DONE);
                             }
 
-                            if (cal_entries_cnt>CAL_DISPLAY_ENTRIES) { break;}
-                            
+                            if (cal_entries_cnt > CAL_DISPLAY_ENTRIES) { break; }
+
                         }
 
 
                         ClearDisplay();
 
-                        strftime(tmp_text,15,"%d.%m.%Y",&global_time);
-                        sprintf(tmp_text2,"Kalendar %s",tmp_text);
+                        strftime(tmp_text, 15, "%d.%m.%Y", &global_time);
+                        sprintf(tmp_text2, "Kalendar %s", tmp_text);
 
                         PaintText(font_table[2], 1, 1, tmp_text2);
-        
+
                         for (int i = 0; i < cal_entries_cnt; i++) {
                             if (cal_entries[i].c0_today != 0) {
-                                PaintText(font_table[CAL_LINE_FONT], 1, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c0_today);
+                                PaintText(font_table[CAL_LINE_FONT], 1, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET,
+                                          cal_entries[i].c0_today);
                             } else {
-                                PaintText(font_table[CAL_LINE_FONT], 1, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c1_weekday);
-                                PaintText(font_table[CAL_LINE_FONT], CAL_LINE_FSIZE * 3, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c2_day);
-                                PaintText(font_table[CAL_LINE_FONT], CAL_LINE_FSIZE * 6, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c3_month);
+                                PaintText(font_table[CAL_LINE_FONT], 1, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET,
+                                          cal_entries[i].c1_weekday);
+                                PaintText(font_table[CAL_LINE_FONT], CAL_LINE_FSIZE * 3,
+                                          (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c2_day);
+                                PaintText(font_table[CAL_LINE_FONT], CAL_LINE_FSIZE * 6,
+                                          (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c3_month);
                             }
 
-                            PaintText(font_table[CAL_LINE_FONT], CAL_LINE_FSIZE * 10, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c4_summary);
+                            PaintText(font_table[CAL_LINE_FONT], CAL_LINE_FSIZE * 10,
+                                      (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c4_summary);
                             if (cal_entries[i].c5_time != 0) {
-                                PaintText(font_table[CAL_LINE_FONT], 800 - 5 * CAL_LINE_FSIZE, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c5_time);
+                                PaintText(font_table[CAL_LINE_FONT], 800 - 5 * CAL_LINE_FSIZE,
+                                          (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c5_time);
                             }
                         }
 
+                        strftime(tmp_text, 19, "%d.%m.%Y %H:%M", &global_time);
+                        sprintf(tmp_text2, "Update: %s", tmp_text);
+                        PaintText(font_table[0],1,CANVAS_Y-20,tmp_text2);
+
                         UpdateDisplay();
+                        delay_ms(500);
+
+                        USART_WriteStatus(CALENDAR_DONE);
+
 
                         global_status = GLOBAL_WAIT_FOR_ESP_COMMANDS;
                         break;
@@ -261,15 +321,10 @@ int main() {
                         break;
 
                     default:
-                        sprintf(global_error,"Unknown ESP Command: %i",cmd);
+                        sprintf(global_error, "Unknown ESP Command:  %i", cmd);
                         global_status = GLOBAL_ERROR;
                 }
 
-                break;
-
-            case GLOBAL_SHUTDOWN:
-                // Turn ourselves OFF, hopefully save some power before final power gate off
-                PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
                 break;
 
 
@@ -282,12 +337,16 @@ int main() {
                 break;
 
             default:
-                sprintf(global_error,"Unknown Global Status: %i",global_status);
+                sprintf(global_error, "Unknown Global Status: %i", global_status);
                 global_status = GLOBAL_ERROR;
 
         }
-        break;
+
     }
+
+    // Turn ourselves OFF, hopefully save some power before final power gate off
+    PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+    while(1){}
 
     return 0;
 }
