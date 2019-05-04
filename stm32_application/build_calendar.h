@@ -13,7 +13,8 @@ extern const char *const MONTH[];
 
 
 struct cal_entry_type {
-    struct tm *tm;
+    struct tm *start_tm;
+    struct tm *end_tm;
     char *c0_today;
     char *c1_weekday;
     char *c2_day;

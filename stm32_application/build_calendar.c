@@ -22,10 +22,8 @@ void BuildCalenarRequest(char *calendar_request, const char *calender_link, char
 
 
 
-
-
 bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_entries, int *cal_cnt, struct tm *CurrentDate,
-              char *summary_format) {
+                   char *summary_format) {
     jsmn_parser parser;
     jsmn_init(&parser);
     char *js = (char *) buffer;
@@ -56,7 +54,10 @@ bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_en
 
             memset(cal_entry, 32, sizeof(cal_entry));
 
-            cal_entries[*cal_cnt].tm = calloc(sizeof(struct tm),1);
+            // ***************+ Read Start Time of the Event
+
+            cal_entries[*cal_cnt].start_tm = calloc(sizeof(struct tm),1);
+            cal_entries[*cal_cnt].end_tm = calloc(sizeof(struct tm),1);
 
             bool b_found_time=false;
 
@@ -73,29 +74,67 @@ bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_en
                 }
             }
 
-            GetDate(value, b_found_time, cal_entries[*cal_cnt].tm);
+            GetDate(value, b_found_time, cal_entries[*cal_cnt].start_tm);
 
-            // Check for today or tomorrow
-            if ((CurrentDate->tm_mday==cal_entries[*cal_cnt].tm->tm_mday) && (CurrentDate->tm_mon==cal_entries[*cal_cnt].tm->tm_mon) ) {
-                cal_entries[*cal_cnt].c0_today=strdup("Heute");
+            // ***************+ Read End  Time of the Event
+            cal_entries[*cal_cnt].end_tm = calloc(sizeof(struct tm),1);
 
-            } else if ((CurrentDate->tm_mday+1==cal_entries[*cal_cnt].tm->tm_mday) && (CurrentDate->tm_mon==cal_entries[*cal_cnt].tm->tm_mon) ) {
-                cal_entries[*cal_cnt].c0_today=strdup("Morgen");
+            b_found_time=false;
+
+            // Find Start-Date or Start-Date and Time
+            sprintf(searchstr, "-Root-items[%i]-end-date", items);
+            if (search_json(js, tokens, r, searchstr, value) != 0) {
+                b_found_time=false;
+                // Format 2019-01-07
+            } else {
+                // Format: 2018-10-08T09:07:30.000Z
+                sprintf(searchstr, "-Root-items[%i]-end-dateTime", items);
+                if (search_json(js, tokens, r, searchstr, value) != 0) {
+                    b_found_time=true;
+                }
+            }
+
+            GetDate(value, b_found_time, cal_entries[*cal_cnt].end_tm);
+            
+            // For all day events google returns end-date +1, we have to subtract 1 day
+
+            if (!b_found_time) {
+                cal_entries[*cal_cnt].end_tm->tm_mday = cal_entries[*cal_cnt].end_tm->tm_mday - 1;
+                mktime(cal_entries[*cal_cnt].end_tm);
+            }
+
+            // to  look nice
+            struct cal_entry_type *ce;
+            ce=&cal_entries[*cal_cnt];
+
+
+            time_t t_current, t_start, t_end;
+
+            t_current=mktime(CurrentDate);
+            t_start=mktime(ce->start_tm);
+            t_end=mktime(ce->end_tm);
+
+            // Check for today or tomorrow, events with duration are displayed also when starting in the past and still valid
+            if (difftime(t_current, t_start)>0 ) {
+                ce->c0_today=strdup("Heute");
+
+            } else if ((CurrentDate->tm_mday+1==ce->start_tm->tm_mday) && (CurrentDate->tm_mon==ce->start_tm->tm_mon) ) {
+                ce->c0_today=strdup("Morgen");
             } else {
 
-                cal_entries[*cal_cnt].c1_weekday=strdup(WEEKDAY[cal_entries[*cal_cnt].tm->tm_wday]);
+                ce->c1_weekday=strdup(WEEKDAY[ce->start_tm->tm_wday]);
 
                 //Day: 1.
-                cal_entries[*cal_cnt].c2_day=calloc(sizeof(char),4);
-                sprintf(cal_entries[*cal_cnt].c2_day, "%i.",cal_entries[*cal_cnt].tm->tm_mday );
+                ce->c2_day=calloc(sizeof(char),4);
+                sprintf(ce->c2_day, "%i.",ce->start_tm->tm_mday );
 
                 //Month: Feb.
-                cal_entries[*cal_cnt].c3_month=strdup(MONTH[cal_entries[*cal_cnt].tm->tm_mon]);
+                ce->c3_month=strdup(MONTH[ce->start_tm->tm_mon]);
 
                 //Zeit:
                 if (b_found_time) {
-                    cal_entries[*cal_cnt].c5_time=calloc(sizeof(char),6);
-                    strftime(cal_entries[*cal_cnt].c5_time,6, "%H:%M", cal_entries[*cal_cnt].tm);
+                    ce->c5_time=calloc(sizeof(char),6);
+                    strftime(ce->c5_time,6, "%H:%M", ce->start_tm);
                 }
 
             }
@@ -106,16 +145,23 @@ bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_en
             if (search_json(js, tokens, r, searchstr, value) != 0) {
 
                 size_t length;
-
-                if (strlen(value)>35) {
-                    length=35;
-                } else {length=strlen(value);}
-
+                length=strlen(value);
                 utf8_to_latin9(value2, value,length+1);
 
+
+                char str_end_date[30]={0};
+
+                if (difftime(t_end, t_start)>86400 ) {
+                    sprintf(str_end_date, " bis %i. %s",ce->end_tm->tm_mday,MONTH[ce->start_tm->tm_mon] );
+                    strcat(value2,str_end_date);
+                }
+
+
+                //limit to 35 char
+                value2[35]=0;
                 size_t needed = snprintf(NULL, 0, summary_format, value2);
-                cal_entries[*cal_cnt].c4_summary= malloc(needed+1);
-                sprintf(cal_entries[*cal_cnt].c4_summary, summary_format, value2);
+                ce->c4_summary= malloc(needed+1);
+                sprintf(ce->c4_summary, summary_format, value2);
             } else return true;
 
 

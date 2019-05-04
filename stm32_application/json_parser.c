@@ -18,7 +18,7 @@ int cmp_dates_descend(const void *d1, const void *d2) {
     struct cal_entry_type date_1 = *(const struct cal_entry_type *) d1;
     struct cal_entry_type date_2 = *(const struct cal_entry_type *) d2;
 
-    double d = difftime(mktime(date_1.tm), mktime(date_2.tm));
+    double d = difftime(mktime(date_1.start_tm), mktime(date_2.start_tm));
 
     return (d > 0) - (d < 0);
 
