@@ -63,10 +63,11 @@
 
 #define CAL_LINE_FONT 1
 #define CAL_LINE_FSIZE 20
-#define CAL_LINE_HEIGHT 40
-#define CAL_HEADER_OFFSET 85
+#define CAL_LINE_HEIGHT 42
+#define CAL_HEADER_OFFSET 95
+#define CAL_LEFT_OFFSET 10
 
-#define CAL_DISPLAY_ENTRIES 12
+#define CAL_DISPLAY_ENTRIES 10
 #define CAL_DISPLAY_DAYS 14
 
 //************** Global VAriables
@@ -78,6 +79,8 @@ const struct font *font_table[3] =
         };
 
 const char *const WEEKDAY[] = {"So.","Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa."};
+const char *const WEEKDAY_LONG[] = {"Sonntag","Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"};
+
 const char *const MONTH[] = {"Jan.", "Feb.", "März", "Apr.", "Mai", "Jun.", "Jul.", "Aug.", "Sept.", "Okt.", "Nov.",
                              "Dez."};
 
@@ -118,6 +121,7 @@ int main() {
 
     char *tmp_text = (char *) calloc((size_t) 100, sizeof(char));  //json_buffer to read from esp
     char *tmp_text2 = (char *) calloc((size_t) 100, sizeof(char));  //json_buffer to read from esp
+    char *tmp_text3 = (char *) calloc((size_t) 100, sizeof(char));  //json_buffer to read from esp
 
     char *calendar_request = (char *) calloc((size_t) 500, sizeof(char));  //json_buffer to read from esp
 
@@ -278,22 +282,21 @@ int main() {
                         ClearDisplay();
 
                         strftime(tmp_text, 15, "%d.%m.%Y", &global_time);
-                        sprintf(tmp_text2, "Kalendar %s", tmp_text);
-
-                        PaintText(font_table[2], 1, 1, tmp_text2);
+                        sprintf(tmp_text2, "%s, %s", WEEKDAY_LONG[global_time.tm_wday],tmp_text);
+                        PaintText(font_table[2], CAL_LEFT_OFFSET, 5, tmp_text2);
 
                         for (int i = 0; i < cal_entries_cnt; i++) {
                             if (cal_entries[i].c0_today != 0) {
-                                PaintText(font_table[CAL_LINE_FONT], 1, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c0_today);
+                                PaintText(font_table[CAL_LINE_FONT], CAL_LEFT_OFFSET, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c0_today);
                             } else {
-                                PaintText(font_table[CAL_LINE_FONT], 1, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET,cal_entries[i].c1_weekday);
-                                PaintText(font_table[CAL_LINE_FONT], CAL_LINE_FSIZE * 3, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c2_day);
-                                PaintText(font_table[CAL_LINE_FONT], CAL_LINE_FSIZE * 6, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c3_month);
+                                PaintText(font_table[CAL_LINE_FONT], CAL_LEFT_OFFSET, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET,cal_entries[i].c1_weekday);
+                                PaintText(font_table[CAL_LINE_FONT], CAL_LEFT_OFFSET+(CAL_LINE_FSIZE * 3), (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c2_day);
+                                PaintText(font_table[CAL_LINE_FONT], CAL_LEFT_OFFSET+(CAL_LINE_FSIZE * 6), (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c3_month);
                             }
 
-                            PaintText(font_table[CAL_LINE_FONT], CAL_LINE_FSIZE * 10, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c4_summary);
+                            PaintText(font_table[CAL_LINE_FONT], CAL_LEFT_OFFSET+(CAL_LINE_FSIZE * 10), (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c4_summary);
                             if (cal_entries[i].c5_time != 0) {
-                                PaintText(font_table[CAL_LINE_FONT], 800 - 5 * CAL_LINE_FSIZE, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c5_time);
+                                PaintText(font_table[CAL_LINE_FONT], 795 - 5 * CAL_LINE_FSIZE, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c5_time);
                             }
                         }
 
