@@ -8,7 +8,7 @@ That is the plan:
 Build a "Kitchen Calendar" by using a Waveshare eInk Display with STM32 processor. 
 http://www.waveshare.com/product/4.3inch-e-Paper.htm
 
-It will be connected to a ESP8266 via UART (serial). The ESP8266 will use its Wifi to upload latest calendar entries from my Google-Calendar (e.g. twice a day). 
+It is connected to a ESP8266 via UART (serial). The ESP8266 will use its Wifi to upload latest calendar entries from my Google-Calendar (e.g. twice a day). 
 
 Once loaded it will wake up the STM32 to update the eInk display.
 By this method power consumption is limited only for some seconds activity over the day - and we a always a good view on our daily activities.
@@ -16,7 +16,7 @@ By this method power consumption is limited only for some seconds activity over 
 Program the eInk Display - STM32 
 --------
 
-I will try to limit the processing on the ESP8266 as much as possible and to build most logic on the STM32. 
+Processing on the ESP8266 is limited as possible and to build most logic on the STM32. 
 
 This is possible based on the great work of this two people: 
 https://davidgf.net/page/41/e-ink-wifi-display
@@ -29,7 +29,7 @@ I have adjusted the cmake-file, the development is very easy by using CLION, inc
 
 Code of the ESP8266
 --------
-https://github.com/happychriss/eInkCalendar_esp8266_sender
+https://github.com/happychriss/ePaper_Calendar_Wifi_esp
 The ESP should have the function to 
 * connect via wifi to Google-Account 
 * download the calendar information
@@ -55,9 +55,6 @@ If you're using MacOSX or Linux, you'll be interested in:
 - https://launchpad.net/gcc-arm-embedded for an already compiled cross compiler (used to build the STM32 firmware)
 - The Expressif SDK (If you need a prebuild disk image for MacOSX, I'll upload mine)
 
-To reuse the display driver for another board, just redefine the macros to point to your GPIOs and you are good to go!
-
-The server should be copied to a PHP enabled server, create a config.php and fill it. Also create a screens/ dir and chmod it to be world readable/writtable.
 
 Schematics
 ----------
@@ -68,12 +65,7 @@ Using UART to connect:
 - Connected GND from the ESP8266 to the programming pin on the STM32 (see David's website for a description of this programming pins, basically it's the third)
 - Connected 3.3V from the ESP8266 to the programming pin on the STM32 (it's the first pin)
 - Connected RST on the STM32 big white connector (RST pin 1) on the left to the ESP8266's pin GPIO12.
-
-There is no battery in my design, you need to plug a microUSB power adapter (or a power bank) to the ESP8266 board to power the whole system. 
-I'll see if in the future I'll put back a power gating transistor to power on the STM32 from the ESP8266, but currently, it works and I don't really fix what's not broken yet.
-
-You can plug a 3.3V UART to USB on the UART1 TX line on the ESP8266 if you want to see debug messages from the ESP (115200 bauds 8N1), or on the DOUT on the STM32 (460800 bauds 8N1)
-See below for changes...
+- see https://44-2.de/screenshot-from-2019-06-15-20-51-41/
 
 
 GDE043A2
