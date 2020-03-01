@@ -16,7 +16,7 @@
 void BuildCalendarRequest(char *calendar_request, const char *calender_link, char *str_time_min, char *str_time_max) {
 
     // "/calendar/v3/calendars/neuhaus.info@gmail.com/events?maxResults=2500&orderBy=startTime&singleEvents=true&timeMax=2019-03-31T00:00:00-01:00&timeMin=2019-03-20T00:00:00-01:00&\0");
-    sprintf(calendar_request,"/calendar/v3/calendars/%s/events?maxResults=2500&orderBy=startTime&singleEvents=true&timeMax=%sT00:00:00-01:00&timeMin=%sT00:00:00-01:00&",calender_link,str_time_max,str_time_min);
+    sprintf(calendar_request,"/calendar/v3/calendars/%s/events?maxResults=%i&orderBy=startTime&singleEvents=true&timeMax=%sT00:00:00-01:00&timeMin=%sT00:00:00-01:00&",calender_link,MAX_CAL_DISPLAY_ENTRIES,str_time_max,str_time_min);
 }
 
 

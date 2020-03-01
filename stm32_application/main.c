@@ -67,7 +67,7 @@
 #define CAL_HEADER_OFFSET 95
 #define CAL_LEFT_OFFSET 10
 
-#define CAL_DISPLAY_ENTRIES 10
+
 #define CAL_DISPLAY_DAYS 14
 
 //************** Global VAriables
@@ -278,11 +278,11 @@ int main() {
 
 
                             // Tell ESP we want to send more requests
-                            if (cal < (config.cal_number - 1) && (cal_entries_cnt <= CAL_DISPLAY_ENTRIES)) {
+                            if (cal < (config.cal_number - 1) && (cal_entries_cnt <= MAX_CAL_DISPLAY_ENTRIES)) {
                                 USART_WriteStatus(CALANDAR_MORE);
                             }
 
-                            if (cal_entries_cnt > CAL_DISPLAY_ENTRIES) { break; }
+
 
                         }
 
@@ -294,7 +294,7 @@ int main() {
                         sprintf(tmp_text2, "%s, %s", WEEKDAY_LONG[global_time.tm_wday],tmp_text);
                         PaintText(font_table[2], CAL_LEFT_OFFSET, 5, tmp_text2);
 
-                        for (int i = 0; i < cal_entries_cnt; i++) {
+                        for (int i = 0; ((i < cal_entries_cnt) && (i<MAX_CAL_DISPLAY_ENTRIES)); i++) {
                             if (cal_entries[i].c0_today != 0) {
                                 PaintText(font_table[CAL_LINE_FONT], CAL_LEFT_OFFSET, (CAL_LINE_HEIGHT * i) + CAL_HEADER_OFFSET, cal_entries[i].c0_today);
                             } else {
@@ -310,7 +310,7 @@ int main() {
                         }
 
                         strftime(tmp_text, 19, "%d.%m.%Y %H:%M", &global_time);
-                        sprintf(tmp_text2, "V2 - Update: %s", tmp_text);
+                        sprintf(tmp_text2, "V2 - Update: %s[ %i ]", tmp_text,cal_entries_cnt);
                         PaintText(font_table[0],1,CANVAS_Y-20,tmp_text2);
 
                         UpdateDisplay();

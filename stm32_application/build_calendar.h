@@ -13,9 +13,10 @@ extern const char *const MONTH[];
 
 // memory limitations
 #define MAX_JSON_BUFFER 51200
-#define MAX_CAL_ENTRIES 50
+#define MAX_CAL_ENTRIES 70
 #define MAX_CHAR_JSON_LINE 100
-#define MAX_CHAR_CALENDAR_ENTRY 37
+#define MAX_CHAR_CALENDAR_ENTRY 34
+#define MAX_CAL_DISPLAY_ENTRIES 11
 
 struct cal_entry_type {
     struct tm *start_tm;
