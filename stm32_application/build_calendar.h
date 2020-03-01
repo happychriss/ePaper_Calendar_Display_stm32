@@ -11,6 +11,11 @@
 extern const char *const WEEKDAY[];
 extern const char *const MONTH[];
 
+// memory limitations
+#define MAX_JSON_BUFFER 51200
+#define MAX_CAL_ENTRIES 50
+#define MAX_CHAR_JSON_LINE 100
+#define MAX_CHAR_CALENDAR_ENTRY 37
 
 struct cal_entry_type {
     struct tm *start_tm;
@@ -24,7 +29,7 @@ struct cal_entry_type {
 };
 
 
-void BuildCalenarRequest(char *calendar_request, const char *calender_link, char *str_time_min, char *str_time_max);
+void BuildCalendarRequest(char *calendar_request, const char *calender_link, char *str_time_min, char *str_time_max);
 
 bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_entries, int *cal_cnt, struct tm *CurrentDate,
               char *summary_format);

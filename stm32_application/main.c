@@ -106,6 +106,8 @@ int main() {
 
     // ******************************** INIT *****************************************************************
 
+
+
     global_status = GLOBAL_INIT;
 
     // Init System and Hardware
@@ -117,7 +119,7 @@ int main() {
     // Allocate Memory from SRAM (calloc over SRAM, linker.ld
     //display is 800x600
     //800 pixel = 100 bytes * 2 for grey colors = 200
-    char *json_buffer = (char *) calloc((size_t) 51200, sizeof(char));  //json_buffer to read from esp
+    char *json_buffer = (char *) calloc((size_t) MAX_JSON_BUFFER, sizeof(char));  //json_buffer to read from esp
 
     char *tmp_text = (char *) calloc((size_t) 100, sizeof(char));  //json_buffer to read from esp
     char *tmp_text2 = (char *) calloc((size_t) 100, sizeof(char));  //json_buffer to read from esp
@@ -125,7 +127,7 @@ int main() {
 
     char *calendar_request = (char *) calloc((size_t) 500, sizeof(char));  //json_buffer to read from esp
 
-    struct cal_entry_type *cal_entries = (struct cal_entry_type *) calloc(100, (sizeof(struct cal_entry_type)));
+    struct cal_entry_type *cal_entries = (struct cal_entry_type *) calloc(MAX_CAL_ENTRIES, (sizeof(struct cal_entry_type)));
     grafic_buffer_lines = calloc(600, sizeof(t_grafic_buffer_line));
     ptr_grafic_buffer = (uint8_t *) grafic_buffer_lines;
     configuration config = {0};
@@ -202,7 +204,7 @@ int main() {
                 switch (cmd) {
 
                     case ESP_CMD_SHOW_USERCODE:
-                        USART_ReadString(device_code);
+                        USART_ReadString(device_code, sizeof(device_code));
 
                         //** Init eInk Display and update with start information*
                         ClearDisplay();
@@ -222,7 +224,7 @@ int main() {
                         break;
 
                     case ESP_CMD_SHOW_ERRORMSG:
-                        USART_ReadString(eror_msg);
+                        USART_ReadString(eror_msg,sizeof(eror_msg));
 
                         //** Init eInk Display and update with start information*
                         ClearDisplay();
@@ -239,7 +241,7 @@ int main() {
                     case ESP_CMD_READ_CALENDAR:
 
                         // read the current time from ESP
-                        USART_ReadString(str_esp_time);
+                        USART_ReadString(str_esp_time,sizeof(str_esp_time));
                         strptime(str_esp_time, "%Y %m %d %H:%M:%S", &global_time);
 
                         // Prepare time-min and time-max for calendar
@@ -258,13 +260,19 @@ int main() {
                         for (int cal = 0; cal < config.cal_number; cal++) {
 
                             //Ask ESP to return calendar information
-                            BuildCalenarRequest(calendar_request, config.calendars[cal].link, time_min, time_max);
+                            BuildCalendarRequest(calendar_request, config.calendars[cal].link, time_min, time_max);
 
                             USART_WriteStatus(CALENDAR_READY);
                             USART_Write(calendar_request);
 
                             uint32_t buffer_counter;
-                            buffer_counter = USART_ReadString(json_buffer);
+                            buffer_counter = USART_ReadString(json_buffer,MAX_JSON_BUFFER);
+                            if (buffer_counter==0) {
+                                sprintf(global_error,"Calendar to big:%i",cal);
+                                global_status = GLOBAL_ERROR;
+                                break;
+                            }
+
                             BuildCalendar(json_buffer, buffer_counter, cal_entries, &cal_entries_cnt, &global_time,
                                           (char *) config.calendars[cal].text);
 
@@ -278,6 +286,7 @@ int main() {
 
                         }
 
+                        if (global_status==GLOBAL_ERROR) break;
 
                         ClearDisplay();
 
@@ -301,7 +310,7 @@ int main() {
                         }
 
                         strftime(tmp_text, 19, "%d.%m.%Y %H:%M", &global_time);
-                        sprintf(tmp_text2, "Update: %s", tmp_text);
+                        sprintf(tmp_text2, "V2 - Update: %s", tmp_text);
                         PaintText(font_table[0],1,CANVAS_Y-20,tmp_text2);
 
                         UpdateDisplay();

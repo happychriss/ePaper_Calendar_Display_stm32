@@ -118,7 +118,7 @@ int search_json(char *js, jsmntok_t *tokens, int end_line, char *search_text, ch
                 DBT(" = '%.*s'\n", t->end - t->start, js + t->start);
 
                 if (strcmp(search_text, token_text) == 0) {
-                    sprintf(value, "%.*s", t->end - t->start, js + t->start);
+                    snprintf(value, MAX_CHAR_JSON_LINE, "%.*s", t->end - t->start, js + t->start);
                     return i;
                 }
 

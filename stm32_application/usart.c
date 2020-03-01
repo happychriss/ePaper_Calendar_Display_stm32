@@ -81,15 +81,19 @@ unsigned char USART_ReadByteSync(USART_TypeDef *USARTx, unsigned *waiter) {
     return (unsigned char) USART_ReceiveData(USARTx);
 }
 
-uint32_t USART_ReadString(char *data) {
+uint32_t USART_ReadString(char *data, uint16_t max_size) {
     uint32_t buffer_counter = 0;
     uint8_t byte_read = 0;
     while (1) {
         byte_read = USART_ReadByteSync(USART1, 0);
         data[buffer_counter++] = byte_read;
-        if (byte_read == 0) {
+        if ((byte_read == 0) || (buffer_counter==max_size-1)) {
             break;
         }
+    }
+
+    if (buffer_counter==max_size) {
+        buffer_counter=0;
     }
     return buffer_counter;
 }
