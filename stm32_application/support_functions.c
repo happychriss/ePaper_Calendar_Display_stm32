@@ -8,6 +8,10 @@
 #include <stm32f10x/core_cm3.h>
 #include <stm32f10x/stm32f10x.h>
 #include "support_functions.h"
+#include "stdio.h"
+#include "string.h"
+
+
 
 void delay_us(uint32_t time_us)
 {
@@ -25,6 +29,16 @@ Disable SysTick Timer */
     SysTick->VAL   = 0;                                          /* Load
 the SysTick Counter Value */
 }
+
+void dp(int x,char *mbuf) {
+    if (strlen(mbuf)<DB_BUFFER-10) {
+        char snum[7] = {0};
+        sprintf(snum, ".%i", x);
+        strcat(mbuf, snum);
+    }
+
+}
+
 
 void delay_ms(uint16_t time_ms)
 {

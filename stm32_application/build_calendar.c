@@ -12,11 +12,12 @@
 #include "json_parser.h"
 #include "build_calendar.h"
 #include "iso_iconv.h"
+#include "support_functions.h"
 
 void BuildCalendarRequest(char *calendar_request, const char *calender_link, char *str_time_min, char *str_time_max) {
 
     // "/calendar/v3/calendars/neuhaus.info@gmail.com/events?maxResults=2500&orderBy=startTime&singleEvents=true&timeMax=2019-03-31T00:00:00-01:00&timeMin=2019-03-20T00:00:00-01:00&\0");
-    sprintf(calendar_request,"/calendar/v3/calendars/%s/events?maxResults=%i&orderBy=startTime&singleEvents=true&timeMax=%sT00:00:00-01:00&timeMin=%sT00:00:00-01:00&",calender_link,MAX_CAL_DISPLAY_ENTRIES,str_time_max,str_time_min);
+    sprintf(calendar_request,"/calendar/v3/calendars/%s/events?maxResults=11&orderBy=startTime&singleEvents=true&timeMax=%sT00:00:00-01:00&timeMin=%sT00:00:00-01:00&",calender_link,str_time_max,str_time_min);
 }
 
 
@@ -38,6 +39,8 @@ bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_en
     jsmntok_t *tokens = (jsmntok_t *) calloc((size_t) r, sizeof(jsmntok_t));
     r = jsmn_parse(&parser, js, strlen(js), tokens, (u_int16_t) r);
 
+    DB(3);
+
     char value[MAX_CHAR_JSON_LINE];
     char value2[MAX_CHAR_JSON_LINE+10];//UTF8 conversion
     char searchstr[50];
@@ -49,9 +52,10 @@ bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_en
         sprintf(searchstr, "-Root-items[%i]-kind", items);
 
         if (search_json(js, tokens, r, searchstr, value) == 0) break;
-
+        DB(4);
         if (strcmp(value, "calendar#event") == 0) {
 
+            DB(5);
   //          memset(cal_entry, 32, sizeof(cal_entry));
 
             // ***************+ Read Start Time of the Event
@@ -141,7 +145,7 @@ bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_en
 
             // Find Summary
             sprintf(searchstr, "-Root-items[%i]-summary", items);
-
+            DB(4);
             if (search_json(js, tokens, r, searchstr, value) != 0) {
 
                 size_t length;
@@ -169,15 +173,18 @@ bool BuildCalendar(char *buffer, uint32_t counter, struct cal_entry_type *cal_en
             if (*cal_cnt==MAX_CAL_ENTRIES) break;
 
             items++;
+            DB(500+items);
         }
 
     }
-
 
     // Sort
     qsort(cal_entries, (size_t ) *cal_cnt, sizeof *cal_entries, cmp_dates_descend);
 
     free(tokens);
+
+    DB(6);
+
     return false;
 
 }

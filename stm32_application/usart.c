@@ -14,7 +14,7 @@ void Serial_USART_Initialize() {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO | RCC_APB2Periph_GPIOB,
                            ENABLE);
 
-    usartConfig.USART_BaudRate = 9600;//460800; //115200;
+    usartConfig.USART_BaudRate = 19200;//460800; //115200;
     usartConfig.USART_WordLength = USART_WordLength_8b;
     usartConfig.USART_StopBits = USART_StopBits_1;
     usartConfig.USART_Parity = USART_Parity_No;
@@ -81,20 +81,19 @@ unsigned char USART_ReadByteSync(USART_TypeDef *USARTx, unsigned *waiter) {
     return (unsigned char) USART_ReceiveData(USARTx);
 }
 
-uint32_t USART_ReadString(char *data, uint16_t max_size) {
+uint32_t USART_ReadString(char *data, uint32_t max_size) {
     uint32_t buffer_counter = 0;
     uint8_t byte_read = 0;
     while (1) {
         byte_read = USART_ReadByteSync(USART1, 0);
         data[buffer_counter++] = byte_read;
-        if ((byte_read == 0) || (buffer_counter==max_size-1)) {
+        if ((byte_read == 0) || (buffer_counter==max_size)) {
             break;
         }
+
+
     }
 
-    if (buffer_counter==max_size) {
-        buffer_counter=0;
-    }
     return buffer_counter;
 }
 
