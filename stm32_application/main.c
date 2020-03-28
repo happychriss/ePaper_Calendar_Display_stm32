@@ -236,7 +236,7 @@ int main() {
         cmd = USART_ReadByteSync(USART1, 0);
 
         char str_esp_time[22] = {0};
-        char device_code[10] = {0};
+        char device_code[20] = {0};
         char error_msg[200] = {0};
 
         switch (cmd) {
