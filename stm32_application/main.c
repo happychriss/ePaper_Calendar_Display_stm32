@@ -13,6 +13,8 @@
 #include <stm32f10x/stm32f10x_pwr.h>
 #include <stm32f10x/stm32f10x_dma.h>
 #include <stm32f10x/stm32f10x_sdio.h>
+#include <stm32f10x/stm32f10x_flash.h>
+
 #include <ff.h>
 
 #include "global.h"
@@ -25,6 +27,7 @@
 #include "usart.h"
 #include "support_functions.h"
 #include "init_stm32.h"
+
 
 #include "fonts/font-robo_8-8.h"
 //#include "fonts/font-robo_bold_8-8.h"
@@ -52,6 +55,10 @@
 #define GLOBAL_SHUTDOWN 4
 #define ESP_CMD_SEND_WIFI_INFO 5
 #define ESP_AWAKE_TEST 6
+#define ESP_WRITE_REFRESH_TOKEN 7
+#define ESP_READ_REFRESH_TOKEN 7
+
+
 
 
 #define CALENDAR_READY  1
@@ -75,8 +82,9 @@
 
 
 #define CAL_DISPLAY_DAYS 14
-
+#ifdef MYDEBUG
 char mbuf[DB_BUFFER] = {0};
+#endif
 
 //************** Global VAriables
 const struct font *font_table[3] =
@@ -98,7 +106,56 @@ char global_error[100];
 t_grafic_buffer_line *grafic_buffer_lines;
 uint8_t *ptr_grafic_buffer;
 struct tm global_time;
+struct struct_esp_data {
+    char refresh_token[10];
+} ESPData;
 
+
+
+// not working..seems not to be enough memory available
+void ReadRecord(struct struct_esp_data *pSD, uint32_t address)
+{
+    uint32_t *ptr = (uint32_t* )pSD;
+    uint32_t flash_address = address;
+
+    for (int i = 0; i < sizeof(struct struct_esp_data); i+=4, ptr++, flash_address+=4 )
+        *ptr = *(__IO uint32_t*) flash_address;
+}
+
+void WriteRecord(struct struct_esp_data *pSD, uint32_t address)
+{
+    int i;
+    uint32_t *pRecord = (uint32_t* )pSD;
+    uint32_t flash_address = address;
+    FLASH_UnlockBank1();
+    FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
+    FLASH_Status FLASHStatus = FLASH_ErasePage(255);
+    for(i=0; i<sizeof(struct struct_esp_data); i+=4, pRecord++, flash_address+=4)
+        FLASH_ProgramWord(flash_address, *pRecord);
+    FLASH_LockBank1();
+}
+
+
+UINT WriteESPData(struct struct_esp_data *pSD) {
+    FIL file;
+    UINT bw;
+    FRESULT res1, res2;
+    res1=f_open(&file, "esp.txt", FA_WRITE  | FA_CREATE_ALWAYS );
+    res2= f_write(&file, pSD->refresh_token, sizeof(pSD->refresh_token), &bw);
+    f_sync(&file);
+    f_close(&file);
+    return res2+res1;
+}
+
+UINT ReadESPData(struct struct_esp_data *pSD) {
+    FIL file;
+    UINT bw;
+    FRESULT res1, res2;
+    res1=f_open(&file, "esp.txt", FA_READ );
+    res2= f_read(&file, pSD, sizeof(pSD->refresh_token), &bw);
+    f_close(&file);
+    return bw;
+}
 
 void UpdateDisplay() {
     //** Write to eInk Display from sram ******************************
@@ -152,16 +209,13 @@ int main() {
         global_status = GLOBAL_ERROR;
     }
 
-    //** Init eInk Display and update with start information*
-    ClearDisplay();
+/*
+    strcpy(ESPData.refresh_token, "Hello\0");
+    UINT bw=WriteESPData(&ESPData);
+    struct struct_esp_data my_data;
+    UINT br=ReadESPData(&my_data);
+*/
 
-    PaintText(font_table[1], 1, 1, "*** Init ***\0");
-    sprintf(tmp_text, "Wifi SSID: %s", config.wifi_ssid);
-    PaintText(font_table[1], 1, 30, tmp_text);
-    sprintf(tmp_text, "Calendars available: %i", config.cal_number);
-    PaintText(font_table[1], 1, 60, tmp_text);
-
-    UpdateDisplay();
 
     // ******************************** LOOP  *****************************************************************
 
@@ -183,16 +237,29 @@ int main() {
 
         char str_esp_time[22] = {0};
         char device_code[10] = {0};
-        char eror_msg[100] = {0};
+        char error_msg[200] = {0};
 
         switch (cmd) {
 
             case ESP_AWAKE_TEST:
+                // read the current time from ESP
+
                 USART_WriteStatus(CALENDAR_READY);
-                delay_ms(300);
+                ClearDisplay();
+                PaintText(font_table[1], 1, 1, "*** Welcome ***\0");
+                UpdateDisplay();
                 break;
 
             case ESP_CMD_SEND_WIFI_INFO:
+                ClearDisplay();
+
+                PaintText(font_table[1], 1, 1, "*** Init ***\0");
+                sprintf(tmp_text, "Wifi SSID: %s", config.wifi_ssid);
+                PaintText(font_table[1], 1, 30, tmp_text);
+                sprintf(tmp_text, "Calendars available: %i", config.cal_number);
+                PaintText(font_table[1], 1, 60, tmp_text);
+
+                UpdateDisplay();
 
                 // Update with Wifi Information
                 USART_Write(config.wifi_ssid);
@@ -221,13 +288,13 @@ int main() {
 
             case ESP_CMD_SHOW_ERRORMSG:
                 DB(90);
-                USART_ReadString(eror_msg, sizeof(eror_msg));
+                USART_ReadString(error_msg, sizeof(error_msg));
 
                 //** Init eInk Display and update with start information*
                 ClearDisplay();
 
                 PaintText(font_table[2], 1, 1, "** ERROR **\0");
-                PaintText(font_table[1], 1, 100, eror_msg);
+                PaintText(font_table[1], 1, 100, error_msg);
 
                 UpdateDisplay();
                 delay_ms(1000);
@@ -237,10 +304,8 @@ int main() {
 
             case ESP_CMD_READ_CALENDAR:
                 DB(1);
-                // read the current time from ESP
                 USART_ReadString(str_esp_time, sizeof(str_esp_time));
                 strptime(str_esp_time, "%Y %m %d %H:%M:%S", &global_time);
-
                 // Prepare time-min and time-max for calendar
                 struct tm my_time;
                 memcpy(&my_time, &global_time, sizeof(struct tm));
@@ -305,9 +370,12 @@ int main() {
                 }
 
                 strftime(tmp_text, 19, "%d.%m.%Y %H:%M", &global_time);
+        #ifdef MYDEBUG
                 sprintf(tmp_text2, "V2-1 %s D:%s ", tmp_text, mbuf);
                 PaintText(font_table[0], 1, CANVAS_Y - 20, tmp_text2);
-
+        #else
+                PaintText(font_table[0], 1, CANVAS_Y - 20, tmp_text);
+        #endif
                 UpdateDisplay();
                 delay_ms(500);
 
@@ -329,7 +397,7 @@ int main() {
 
     if (global_status == GLOBAL_ERROR) {
         ClearDisplay();
-        PaintText(font_table[1], 1, 1, "ERROR\0");
+        PaintText(font_table[1], 1, 1, "Display ERROR\0");
         PaintText(font_table[1], 1, 30, global_error);
         UpdateDisplay();
         global_status = GLOBAL_SHUTDOWN;

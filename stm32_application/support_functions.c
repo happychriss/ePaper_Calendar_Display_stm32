@@ -30,6 +30,7 @@ Disable SysTick Timer */
 the SysTick Counter Value */
 }
 
+#ifdef MYDEBUG
 void dp(int x,char *mbuf) {
     if (strlen(mbuf)<DB_BUFFER-10) {
         char snum[7] = {0};
@@ -38,7 +39,7 @@ void dp(int x,char *mbuf) {
     }
 
 }
-
+#endif
 
 void delay_ms(uint16_t time_ms)
 {

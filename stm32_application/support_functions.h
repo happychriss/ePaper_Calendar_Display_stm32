@@ -11,15 +11,17 @@
 #define DP(x)     USART_Write(x);
 #define DPD(x)     USART_WriteInt(x);USART_WRITE("\n\r");
 #define DPL(x)  USART_Write(x);USART_WRITE("\n\r");
+#define DB_BUFFER 600
+extern char mbuf[DB_BUFFER];
+#define DB(x) dp(x,mbuf)
 #else
 #define DP(x)
 #define DPD(x)
 #define DPL(x)
+#define DB(x)
 #endif
 
-#define DB_BUFFER 600
-extern char mbuf[DB_BUFFER];
-#define DB(x) dp(x,mbuf)
+
 
 void dp(int x,char *mbuf);
 
